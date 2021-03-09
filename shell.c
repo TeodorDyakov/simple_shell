@@ -4,49 +4,64 @@
 #include<string.h>
 #include<sys/wait.h>
 
-#define LEN 32
+struct cmd{
+	char* cmd;
+	char* argv[32];
+};
 
-char buf[LEN];
+struct cmd cmds[32];
 
 int main(int argc, char** argv){
-	int fd[2];
-	pipe(fd);
-
-	int pid = fork();
-
-	if(pid == 0){
-		close(fd[0]);
-		dup2(fd[1], 1);
-		execlp("cat", "cat", "words", NULL);
+	int idx = 0;
+	for(int i = 1; i < argc; i++){
+		
+		struct cmd* cmdPtr = &cmds[idx];
+		cmdPtr->cmd = argv[i];
+		int argIdx = 0;	
+		
+		while(i < argc && (strcmp(argv[i], "|") != 0)){
+			cmdPtr->argv[argIdx] = argv[i];
+			argIdx++;
+			i++;
+		}
+		cmdPtr->argv[argIdx] = NULL;
+		idx++;
 	}
 
-	int fd1[2];
-	pipe(fd1);
+	//the first cmd reads from STDIN
+	int prevInFd = 0;
 
-	pid = fork();
+	for(int i = 0; i < idx; i++){
+		char path[32] = "/bin/";
+		strcat(path, cmds[i].cmd);
 
-	if(pid == 0){
+		int fd[2];
+		pipe(fd);
+
+		int cpid = fork();
+		if(cpid == 0){
+
+			dup2(prevInFd, 0);			
+
+			//redirect stdout to write end of pipe if this is not the last command 
+			if(i != idx -1){
+				dup2(fd[1], 1);
+			}
+			execv(path, cmds[i].argv);			
+		}
+
+		if(i != 0){
+			close(prevInFd);		
+		}
+
+		prevInFd = fd[0];
 		close(fd[1]);
-		dup2(fd[0], 0);
-		close(fd1[0]);
-		dup2(fd1[1], 1);
-		execlp("wc", "wc", NULL);
-	}
-	
-	close(fd[0]);
-	close(fd[1]);
-
-	pid = fork();
-
-	if(pid == 0){
-		close(fd1[1]);
-		dup2(fd1[0], 0);
-		execlp("wc", "wc", NULL);
 	}
 
-	close(fd1[1]);
-	close(fd1[0]);
-	wait(NULL);
-	wait(NULL);
-	wait(NULL);
+	close(prevInFd);
+
+	for(int i = 0; i < idx; i++){
+		wait(NULL);
+	}
+
 }
