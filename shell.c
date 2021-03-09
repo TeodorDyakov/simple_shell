@@ -14,17 +14,16 @@ struct cmd cmds[32];
 int main(int argc, char** argv){
 	int idx = 0;
 	for(int i = 1; i < argc; i++){
-		
-		struct cmd* cmdPtr = &cmds[idx];
-		cmdPtr->cmd = argv[i];
+
+		cmds[idx].cmd = argv[i];
 		int argIdx = 0;	
 		
 		while(i < argc && (strcmp(argv[i], "|") != 0)){
-			cmdPtr->argv[argIdx] = argv[i];
+			cmds[idx].argv[argIdx] = argv[i];
 			argIdx++;
 			i++;
 		}
-		cmdPtr->argv[argIdx] = NULL;
+		cmds[idx].argv[argIdx] = NULL;
 		idx++;
 	}
 
@@ -39,6 +38,11 @@ int main(int argc, char** argv){
 		pipe(fd);
 
 		int cpid = fork();
+		
+		if(cpid == -1){
+			perror("could not fork");
+			exit(-1);
+		}
 		if(cpid == 0){
 
 			dup2(prevInFd, 0);			
