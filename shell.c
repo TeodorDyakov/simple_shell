@@ -11,17 +11,34 @@ struct cmd{
 
 struct cmd cmds[32];
 
+/*
+This is a simple shell interpreter that supports the pipe operator
+Example:
+gcc shell.c -o shell
+
+./shell "ls -l | wc"
+*/
+
 int main(int argc, char** argv){
 	int idx = 0;
-	for(int i = 1; i < argc; i++){
+	char* pch = strtok(argv[1] ," ");
+	
+	if(argc  < 1){
+		printf("not enough arguments");
+		exit(-1);
+	}
 
-		cmds[idx].cmd = argv[i];
+	while(pch != NULL){
+		if (strcmp(pch, "|") == 0){
+			pch = strtok(NULL, " ");
+		}
+		cmds[idx].cmd = pch;
 		int argIdx = 0;	
 		
-		while(i < argc && (strcmp(argv[i], "|") != 0)){
-			cmds[idx].argv[argIdx] = argv[i];
+		while(pch != NULL && (strcmp(pch, "|") != 0)){
+			cmds[idx].argv[argIdx] = pch;
 			argIdx++;
-			i++;
+			pch = strtok(NULL ," ");
 		}
 		cmds[idx].argv[argIdx] = NULL;
 		idx++;
@@ -38,7 +55,7 @@ int main(int argc, char** argv){
 		pipe(fd);
 
 		int cpid = fork();
-		
+
 		if(cpid == -1){
 			perror("could not fork");
 			exit(-1);
