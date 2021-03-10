@@ -20,14 +20,14 @@ gcc shell.c -o shell
 */
 
 int main(int argc, char** argv){
-	int idx = 0;
-	char* pch = strtok(argv[1] ," ");
-	
 	if(argc  < 1){
 		printf("not enough arguments");
 		exit(-1);
 	}
 
+	int idx = 0;
+	char* pch = strtok(argv[1] ," ");
+	
 	while(pch != NULL){
 		if (strcmp(pch, "|") == 0){
 			pch = strtok(NULL, " ");
